@@ -27,6 +27,9 @@ const Chat = () => {
       if(room.data){
         setRoomID(room.data._id)
       }
+      else{
+        navigate("/chat")
+      }
     }
 
   useEffect(()=>{

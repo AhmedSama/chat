@@ -28,9 +28,8 @@ const io = new Server(server, {
 
   async function searchUsersByLetter(letter,myuserid) {
     try {
+        // this query search for all users with the letter provided except my user
         const users = await User.find({ username: { $regex: new RegExp(letter, 'i') } , id: { $ne: myuserid } });
-        // Handle the matching users
-        ////console.log(users);
         return users
       } catch (error) {
         console.error('Error searching for users:', error);
@@ -118,6 +117,7 @@ mongoose.connect(databaseUrl)
         })
     });
     app.get("/users",async (req,res) => {
+        // add my user id so i don't fetch it with the users
         const users = await searchUsersByLetter(req.query.search,req.query.userid);
         res.json(users)
     })
