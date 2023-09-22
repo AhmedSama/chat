@@ -1,7 +1,6 @@
 import GoogleSignButton from '../components/GoogleSignButton'
 
 const Home = () => {
-  console.log(process.env.REACT_APP_SERVER_URL)
   return (
     <div className='center'>
         <div className='form'>

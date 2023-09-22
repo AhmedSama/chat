@@ -8,6 +8,7 @@ import Right from "../components/Right"
 import Left from "../components/Left"
 import toast, { Toaster } from 'react-hot-toast';
 import axiosInstance from "../axiosConfig"
+import axios from "axios"
 
 const Chat = () => {
     
@@ -21,7 +22,7 @@ const Chat = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
-    async function setTheRoom(my_id,otherUserID){
+    async function setTheRoomID(my_id,otherUserID){
       const room = await axiosInstance.get(`/room?my_id=${my_id}&other_id=${otherUserID}`)
       if(room.data){
         setRoomID(room.data._id)
@@ -29,17 +30,125 @@ const Chat = () => {
     }
 
   useEffect(()=>{
+    const cancelTokenSource = axios.CancelToken.source();
     async function getAllMsgsByRoomID(){
       if(roomID){
-        const msgs = await axiosInstance.get(`/msgs?room_id=${roomID}`)
-        setMessages([...msgs.data])
+        try{
+          const msgs = await axiosInstance.get(`/msgs?room_id=${roomID}`, {
+            cancelToken: cancelTokenSource.token
+          })
+          setMessages([...msgs.data])
+        }
+        catch(error){
+          if (axios.isCancel(error)) {
+            // Handle request cancellation here
+            console.log(error.message);
+          } else {
+            console.log("error",error)
+          }
+        }
       }
     }
     getAllMsgsByRoomID()
+    return () => {
+      cancelTokenSource.cancel('Request canceled😉');
+    };
   }
   // it depends on other user id so when we click on other user we get another messages
   ,[otherUserID,roomID])
 
+  // this the first thing when i get the rooms and add active state to them
+  // i set it to obj.users.includes(otherUserID) so if i refresh the page and i was in some chat i will active=true to that chat
+  useEffect(() => {
+    if (!socket) return
+    socket.on("get rooms", rooms=>{
+      // add active state to the room data so i can style the active user
+      const modifiedArray = rooms.map(obj => {
+        return {
+          ...obj,
+          active: obj.users.includes(otherUserID),
+        }
+      });
+
+      // sort the room depends on updatedAt to render them from the earliest updated room to last 
+      // it updates when a new last_message is updated in the room
+      modifiedArray.sort((room1, room2) => {
+        const date1 = new Date(room1.updatedAt);
+        const date2 = new Date(room2.updatedAt);
+        return date2 - date1;
+      });
+      setUsers(modifiedArray)
+    })
+    return () => {
+      socket.off("get rooms")
+    }
+  },[socket,otherUserID])
+
+  // set the active state for the user when otherUserID changes
+  useEffect(()=>{
+    setUsers(prevUsers => {
+      return prevUsers.map(obj => ({
+        ...obj,
+        // i used otherUserID to make it fast because it get is it from the url imediatly
+        active: obj.users.includes(otherUserID),
+        // we can use this method to update the active state but make sure to inlude the roomID in the dependency array instead of otherUserID
+        // active: obj._id === roomID,
+      }));
+    })
+  },[otherUserID])
+
+  useEffect(()=>{
+    if(otherUserID && userData){
+      setTheRoomID(userData.id,otherUserID)
+    }
+  },[otherUserID,userData])
+
+  useEffect(() => {
+    if(!socket) return
+
+    socket.on("msg recv",(msg,room_id,userID,name,photoURL)=>{
+      const now = new Date(); // Get the current date and time
+      // Format the date and time into the desired string format with the timezone offset
+      const updatedAt_timestamp = now.toISOString().replace('Z', '+00:00');
+      // update the users in sidebar spesifically update the last message and update the updatedAt to sort the rooms or users
+      // * note that i have to update the updatedAt cause i dont get it immediatlly from database 
+      // user._id is the id of the room in side bar
+      // room_id is the room id sent with the message
+      setUsers((prevUsers) => {
+        return prevUsers.map(user=> user._id === room_id ? {...user,last_message : msg,updatedAt:updatedAt_timestamp} : user).sort((room1, room2) => {
+          const date1 = new Date(room1.updatedAt);
+          const date2 = new Date(room2.updatedAt);
+          return date2 - date1;
+        });
+      })
+
+      // if the id of sender is the otherUserID or my id i have to update the messages
+      if(otherUserID === userID || userData.id === userID){
+        setMessages((prevMessages) => [...prevMessages, {content:msg,sender_id : userID}]);
+      }
+      // else it means the msg comes from a user that I am not open his/her chat so just toast it
+      else{
+        toast((t) => (
+          <Link onClick={() => {
+            toast.dismiss(t.id)
+            
+            }} to={`/chat/${userID}`}>
+            <span className="user-info">
+              <img className="user-image" src={photoURL} alt={name} />
+              <div>
+                <h4>{name}</h4>
+                <p>{msg}</p>
+              </div>
+            </span>
+          </Link>
+        ));
+      }
+    })
+
+    return () => {
+      socket.off("msg recv")
+    }
+  },[socket,otherUserID,userData])
     useEffect(()=>{
       const socketInstance = io(process.env.REACT_APP_SERVER_URL)
 
@@ -55,27 +164,29 @@ const Chat = () => {
 
             socketInstance.emit("join related rooms",user.uid)
             // get the rooms and rooms set the users as rooms to render them later
-            socketInstance.on("get rooms", rooms=>{
-              // add active state to the room data so i can style the active user
-              const modifiedArray = rooms.map(obj => ({
-                ...obj,
-                active: obj.users.includes(otherUserID),
-              }));
+            // socketInstance.on("get rooms", rooms=>{
+            //   // add active state to the room data so i can style the active user
+            //   const modifiedArray = rooms.map(obj => ({
+            //     ...obj,
+            //     active: obj.users.includes(otherUserID),
+            //   }));
 
-              // sort the room depends on updatedAt to render them from the earliest updated room to last 
-              // it updates when a new last_message is updated in the room
-              modifiedArray.sort((room1, room2) => {
-                const date1 = new Date(room1.updatedAt);
-                const date2 = new Date(room2.updatedAt);
-                return date2 - date1;
-              });
-              setUsers(modifiedArray)
-            })
+            //   // sort the room depends on updatedAt to render them from the earliest updated room to last 
+            //   // it updates when a new last_message is updated in the room
+            //   modifiedArray.sort((room1, room2) => {
+            //     const date1 = new Date(room1.updatedAt);
+            //     const date2 = new Date(room2.updatedAt);
+            //     return date2 - date1;
+            //   });
+            //   setUsers(modifiedArray)
+            // })
+
+
             // get the room between me and other user when refreshing the page to get the room id and set it
             // i don't have to join because i already did in "join related rooms" 
-            if(otherUserID){
-              setTheRoom(user.uid,otherUserID)
-            }
+            // if(otherUserID){
+            //   setTheRoom(user.uid,otherUserID)
+            // }
             
 
             // when I click on a user in search it send "make room" event to server with my id and other user id
@@ -99,40 +210,40 @@ const Chat = () => {
               // then I send the ID so both users join the room
               socketInstance.emit("join by room info",roomInfo._id)
             })
-            socketInstance.on("msg recv",(msg,room_id,userID,name,photoURL)=>{
-              const now = new Date(); // Get the current date and time
-              // Format the date and time into the desired string format with the timezone offset
-              const updatedAt_timestamp = now.toISOString().replace('Z', '+00:00');
-              // update the users in sidebar spesifically update the last message and update the updatedAt to sort the rooms or users
-              // * note that i have to update the updatedAt cause i dont get it immediatlly from database 
-              // user._id is the id of the room in side bar
-              // room_id is the room id sent with the message
-              setUsers((prevUsers) => {
-                return prevUsers.map(user=> user._id === room_id ? {...user,last_message : msg,updatedAt:updatedAt_timestamp} : user).sort((room1, room2) => {
-                  const date1 = new Date(room1.updatedAt);
-                  const date2 = new Date(room2.updatedAt);
-                  return date2 - date1;
-                });
-              })
-              // if the id of sender is the otherUserID or my id i have to update the messages
-              if(otherUserID === userID || user.uid === userID){
-                setMessages((prevMessages) => [...prevMessages, {content:msg,sender_id : userID}]);
-              }
-              // else it means the msg comes from a user that I am not open his/her chat so just toast it
-              else{
-                toast((t) => (
-                  <Link onClick={() => toast.dismiss(t.id)} to={`/chat/${userID}`}>
-                    <span className="user-info">
-                      <img className="user-image" src={photoURL} alt={name} />
-                      <div>
-                        <h4>{name}</h4>
-                        <p>{msg}</p>
-                      </div>
-                    </span>
-                  </Link>
-                ));
-              }
-            })
+            // socketInstance.on("msg recv",(msg,room_id,userID,name,photoURL)=>{
+            //   const now = new Date(); // Get the current date and time
+            //   // Format the date and time into the desired string format with the timezone offset
+            //   const updatedAt_timestamp = now.toISOString().replace('Z', '+00:00');
+            //   // update the users in sidebar spesifically update the last message and update the updatedAt to sort the rooms or users
+            //   // * note that i have to update the updatedAt cause i dont get it immediatlly from database 
+            //   // user._id is the id of the room in side bar
+            //   // room_id is the room id sent with the message
+            //   setUsers((prevUsers) => {
+            //     return prevUsers.map(user=> user._id === room_id ? {...user,last_message : msg,updatedAt:updatedAt_timestamp} : user).sort((room1, room2) => {
+            //       const date1 = new Date(room1.updatedAt);
+            //       const date2 = new Date(room2.updatedAt);
+            //       return date2 - date1;
+            //     });
+            //   })
+            //   // if the id of sender is the otherUserID or my id i have to update the messages
+            //   if(otherUserID === userID || user.uid === userID){
+            //     setMessages((prevMessages) => [...prevMessages, {content:msg,sender_id : userID}]);
+            //   }
+            //   // else it means the msg comes from a user that I am not open his/her chat so just toast it
+            //   else{
+            //     toast((t) => (
+            //       <Link onClick={() => toast.dismiss(t.id)} to={`/chat/${userID}`}>
+            //         <span className="user-info">
+            //           <img className="user-image" src={photoURL} alt={name} />
+            //           <div>
+            //             <h4>{name}</h4>
+            //             <p>{msg}</p>
+            //           </div>
+            //         </span>
+            //       </Link>
+            //     ));
+            //   }
+            // })
 
             // after making the main events of the socket i set it to state so it is not recreated in every re render of the page
             setSocket(socketInstance);
@@ -156,7 +267,7 @@ const Chat = () => {
         return () => {
           socketInstance.disconnect();
         };
-    },[otherUserID])
+    },[])
 
   return (
     <>  {
