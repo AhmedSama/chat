@@ -14,13 +14,14 @@ const Left = ({socket,setRoomID,users,setUsers}) => {
     const [searchUsers,setSearchUsers] = useState([])
     const navigate = useNavigate()
     useEffect(() => {
+        if(!userData) return
         // Create a timer variable to debounce the search
         let timer;
     
         // Function to perform the actual search
         const performSearch = async () => {
           try {
-            const response = await axiosInstance.get(`/users?search=${searchInput}`);
+            const response = await axiosInstance.get(`/users?search=${searchInput}&userid=${userData.id}`);
             console.log(response.data);
             setSearchUsers(response.data);
           } catch (error) {
@@ -40,7 +41,7 @@ const Left = ({socket,setRoomID,users,setUsers}) => {
     
         // Clear the timer if the user types again within the delay
         return () => clearTimeout(timer);
-      }, [searchInput])
+      }, [searchInput,userData])
 
     function logout (){
         signOut(auth).then(() => {
@@ -108,4 +109,3 @@ const Left = ({socket,setRoomID,users,setUsers}) => {
 }
 
 export default Left
-// {data.users[0] === userData.id ? data.users[1] : data.users[0]}

@@ -26,9 +26,9 @@ const io = new Server(server, {
     }
 })
 
-  async function searchUsersByLetter(letter) {
+  async function searchUsersByLetter(letter,myuserid) {
     try {
-        const users = await User.find({ username: { $regex: new RegExp(letter, 'i') } });
+        const users = await User.find({ username: { $regex: new RegExp(letter, 'i') } , id: { $ne: myuserid } });
         // Handle the matching users
         ////console.log(users);
         return users
@@ -43,6 +43,7 @@ const io = new Server(server, {
 async function makeRoom(userID,otherUserId){
     let room = await Room.findOne({ users: { $all: [userID, otherUserId], $size: 2 } })
     if (!room) {
+        console.log("room is created",userID,otherUserId);
         // TODO check if the user is really existed
         const user1 = await User.findOne({id : userID})
         const user2 = await User.findOne({id : otherUserId})
@@ -59,6 +60,7 @@ async function makeRoom(userID,otherUserId){
         return room
     }
     else{
+        console.log("room is already",room);
         return room
     }
 }
@@ -116,7 +118,7 @@ mongoose.connect(databaseUrl)
         })
     });
     app.get("/users",async (req,res) => {
-        const users = await searchUsersByLetter(req.query.search);
+        const users = await searchUsersByLetter(req.query.search,req.query.userid);
         res.json(users)
     })
     app.get("/room",async (req,res) => {
