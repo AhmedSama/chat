@@ -18,6 +18,7 @@ const Chat = () => {
     // users are just the rooms from the database with last message with it
     const [users,setUsers] = useState([])
     const [roomID,setRoomID] = useState(null)
+    const [showRightSection,setShowRightSection] = useState(false)
     const { otherUserID } = useParams()
     const navigate = useNavigate()
     const dispatch = useDispatch()
@@ -127,17 +128,17 @@ const Chat = () => {
 
       // if the id of sender is the otherUserID or my id i have to update the messages
       if(otherUserID === userID || userData.id === userID){
-        setMessages((prevMessages) => [...prevMessages, {content:msg,sender_id : userID}]);
+        setMessages((prevMessages) => [{content:msg,sender_id : userID},...prevMessages ]);
       }
       // else it means the msg comes from a user that I am not open his/her chat so just toast it
       else{
         toast((t) => (
           <Link onClick={() => {
             toast.dismiss(t.id)
-            
+            setShowRightSection(true)
             }} to={`/chat/${userID}`}>
             <span className="user-info">
-              <img className="user-image" src={photoURL} alt={name} />
+              <img className="user-img" src={photoURL} alt={name} />
               <div>
                 <h4>{name}</h4>
                 <p>{msg}</p>
@@ -173,7 +174,16 @@ const Chat = () => {
             socketInstance.on("room info",(roomInfo)=>{
               // add the room to the rooms which are users and also add active state to it 
               setUsers((prevUsers) => {
-                return [...prevUsers,{...roomInfo,active:false}]
+                // this check is made when someone click on a user in the search
+                // so we have to check if we have a room between
+                // and we dont have to add a new room or user
+                const exists = prevUsers.some((obj) => obj._id === roomInfo._id);
+                if(exists){
+                  return prevUsers
+                }
+                else{
+                  return [...prevUsers,{...roomInfo,active:false}]
+                }
               })
               // set the room id so i can send msg * when i send a message i have to have the roomid is set
               setRoomID(roomInfo._id)
@@ -183,7 +193,16 @@ const Chat = () => {
             socketInstance.on("room info other",(roomInfo)=>{
               // add the room to the rooms which are users and also add active state to it 
               setUsers((prevUsers) => {
-                return [...prevUsers,{...roomInfo,active:false}]
+                // this check is made when someone click on a user in the search
+                // so we have to check if we have a room between
+                // and we dont have to add a new room or user
+                const exists = prevUsers.some((obj) => obj._id === roomInfo._id);
+                if(exists){
+                  return prevUsers
+                }
+                else{
+                  return [...prevUsers,{...roomInfo,active:false}]
+                }
               })
               // then I send the roomID so both users join the room
               socketInstance.emit("join by room info",roomInfo._id)
@@ -214,17 +233,17 @@ const Chat = () => {
   return (
     <>  {
         userData && socket &&
-        <div className="chat" >
+        <div className={`chat  ${showRightSection ? "show" : "hide"}`} >
             {/* left section */}
-            <Left socket={socket} setRoomID={setRoomID} users={users} setUsers={setUsers}/>
+            <Left socket={socket} setRoomID={setRoomID} users={users} setUsers={setUsers}  setShowRightSection={setShowRightSection}/>
             {/* right section */}
-            <Right messages={messages} otherUserID={otherUserID} socket={socket} roomID={roomID} />
-            <Toaster
-            position="top-right"
-            reverseOrder={false}
-            />
+            <Right messages={messages} socket={socket} roomID={roomID} setShowRightSection={setShowRightSection} />
         </div>
       }
+      <Toaster
+      position="top-right"
+      reverseOrder={false}
+      />
     </>
   )
 }

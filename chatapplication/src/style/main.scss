@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import 'variables';
 
 *{
     margin: 0;
@@ -9,193 +10,202 @@
 a{
   text-decoration: none;
 }
-/* width */
+.shadow{
+  box-shadow: 1px 3px 5px rgb(239, 239, 239);
+}
 ::-webkit-scrollbar {
     width: 0px;
   }
 .left:hover ::-webkit-scrollbar{
     width: 7px;
 }
-  /* Track */
   ::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 10px;
   }
   
-  /* Handle */
   ::-webkit-scrollbar-thumb {
     background: #c5c5c5;
     border-radius: 10px;
 
   }
   
-  /* Handle on hover */
   ::-webkit-scrollbar-thumb:hover {
     background: #555;
   }
+
 .center{
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+  }
+.h-100{
+  height: 100vh;
 }
-
+.light-text{
+  color: #999999;
+  font-size: 15px;
+}
 .form{
     padding: 20px 40px;
     border-radius: 10px;
-    /* box-shadow: 0 5px 5px rgba(0,0,0,0.1); */
     border: 1px solid rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 .google-btn{
-    padding: 20px 40px;
+    padding: 15px 20px;
     border-radius: 10px;
     box-shadow: 0 5px 5px rgba(0,0,0,0.1);
     border: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 20px;
     font-weight: 600;
     background-color: white;
     cursor: pointer;
+    width: fit-content;
 }
 .google-btn:hover{
     background-color: rgb(242, 242, 242);
+    
 }
 
-/* chat */
-
+.search-input{
+  flex: 10;
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 50px;
+  padding: 10px 15px;
+  font-size: 20px;
+  margin: 10px;
+  position: relative;
+  input{
+    border: none;
+    width: 100%;
+    &:focus{
+      outline: none;
+    }
+  }
+}
+.topbar{
+  flex: 1;
+  display: flex;
+  padding: 10px;
+  align-items: center;
+  gap: 10px;
+  &.topbar-right{
+    box-shadow: 1px 5px 5px rgb(239, 239, 239);;
+    flex: .5;
+  }            
+}
+.p{
+  padding: 10px;
+}
 .chat{
     display: flex;
     height: 100vh;
     width: 100%;
+    .left{
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      flex: 1.8;
+      border-right: 1px solid #EAEAEA;       
+    }
+    .right{
+      flex: 4;
+      display: flex;
+      flex-direction: column;
+  }
 }
-.left{
-    height: 100%;
+.user-img{
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    border-right: 1px solid #EAEAEA;
+    width: 35px;
+    height: 35px;
+    object-fit: cover;
+    border-radius: 100px;
 }
-.search-input{
-  position: relative;
+.user-img.side{
+    width: 50px;
+    height: 50px;
 }
+
 .result-container{
   position: absolute;
   background-color: white;
   box-shadow: 1px 5px 5px rgb(239, 239, 239);
   padding: 10px;
   border-radius: 10px;
+  font-size: 15px;
   left: 0;
   width: 100%;
 }
-.search-user{
-  /* display: flex; */
-}
-.link-user{
-  text-decoration: none;
 
+
+.chat-item.active{
+  background-color: #456ee7;
+  color: #fff;
 }
-.link-user .active{
-  background-color: #cdddef;
-}
-.result-container img{
-  width: 40px;
-    height: 40px;
-    object-fit: contain;
-    border-radius: 100px;
-}
+
 .user-container{
     flex: 10;
     overflow-y: scroll;
 }
-.headleft{
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.headleft img{
-    flex: 1;
-}
-.headleft input{
-    flex: 10;
-    border: 1px solid rgba(0,0,0,0.2);
-    border-radius: 50px;
-    padding: 10px 15px;
-    font-size: 20px;
-    margin: 10px;
-}
-.left ul li,.user-info{
+
+.chat-item, .user-info{
     list-style: none;
-    padding: 10px;
     display: flex;
     align-items: center;
     gap: 10px;
+    border-radius: 10px;
     cursor: pointer;
 }
-ul li:hover{
+.chat-item:hover{
+  &:not(.active){
     background-color: rgb(245, 245, 245);
+  }
 }
-.left .user-img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    border-radius: 100px;
+
+.result-container{
+  position: absolute;
+  top: 50px;
+  background-color: rgb(255, 255, 255);
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 5px 5px rgba(0,0,0,0.1);
 }
-.left ul li img,.user-image{
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    border-radius: 100px;
-}
-.left ul li h4{
-    font-size: 20px;
-}
+
 .logout-btn{
-    background-color: rgb(255, 0, 55);
-    color: white;
-    padding: 10px;
-    font-size: 15px;
-    border: none;
-    cursor: pointer;
-    border: 5px;
-    border-radius: 50px;
-    width: fit-content;
+  cursor: pointer;
+  font-size: 40px;
+  background: #ff0047;
+  fill: white;
+  padding: 10px;
+  border-radius: 100px;
 }
-.logout-btn:hover{
-    background-color:rgb(199, 0, 43);
-}
-.right{
-    flex: 4;
-    display: flex;
-    flex-direction: column;
-    padding:50px 200px ;
-}
-/* msgs */
-/* MessageList.css */
+
 
 .message-list {
     flex: 5;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     padding: 10px;
     overflow-y: scroll;
   }
   
-  /* Message.css */
   
   .message {
     padding: 15px;
     margin: 5px;
     border-radius: 20px;
-    /* font-size: 20px; */
     max-width: 70%;
   }
   
   .user-message {
-    background-color: #007BFF;
+    background-color: $primary;
     color: white;
     align-self: flex-end;
   }
@@ -205,8 +215,7 @@ ul li:hover{
     color: black;
     align-self: flex-start;
   }
-  /*  */
-  /* MessageInput.css */
+
 
 .message-input {
     display: flex;
@@ -238,8 +247,48 @@ ul li:hover{
     cursor: pointer;
     transition: background-color 0.3s;
   }
-  
+  .send-btn{
+    cursor: pointer;
+    font-size: 45px;
+    background: #007BFF;
+    fill: white;
+    padding: 10px;
+    border-radius: 100px;
+    transition: transform .1s ease-in-out;
+  }  
   .message-input button:hover {
     background-color: #0056b3;
   }
+  .topbar-arrow{
+    display: none;
+  }
+
+@media screen and (max-width: 768px) {
+  .topbar-arrow{
+    display: block;
+    font-size: 22px;
+    cursor: pointer;
+  }
+  .chat.show{
+      .right{
+        display: flex;
+        flex: 1;
+      }
+      .left{
+        display: none;
+        flex: 0;
+      }
+    }
+    .chat.hide{
+      .left{
+        display: flex;
+        flex: 1;
+      }
+      .right{
+        display: none;
+        flex: 0;
+      }
+    }
+    
   
+}

@@ -42,8 +42,8 @@ const io = new Server(server, {
 async function makeRoom(userID,otherUserId){
     let room = await Room.findOne({ users: { $all: [userID, otherUserId], $size: 2 } })
     if (!room) {
-        console.log("room is created",userID,otherUserId);
-        // TODO check if the user is really existed
+        // i dont have to check if the user is existed or not because i have that check
+        // inside setTheRoomID function inside Chat.jsx in client and /room api in the server
         const user1 = await User.findOne({id : userID})
         const user2 = await User.findOne({id : otherUserId})
         room = await Room.create({
@@ -121,12 +121,21 @@ mongoose.connect(databaseUrl)
         const users = await searchUsersByLetter(req.query.search,req.query.userid);
         res.json(users)
     })
+    app.get("/user",async (req,res) => {
+        try{
+            const user = await User.findOne({id : req.query.userID});
+            res.json(user)
+        }
+        catch(error){
+            res.status(400).json({error})
+        }
+    })
     app.get("/room",async (req,res) => {
         const room = await joinRoom(req.query.my_id,req.query.other_id)
         res.json(room)
     })
     app.get("/msgs",async (req,res) => {
-        const msgs = await Msg.find({room_id : req.query.room_id})
+        const msgs = await Msg.find({room_id : req.query.room_id}).sort({ createdAt: -1 });
         res.json(msgs)
     })
     app.post("/adduser",async (req,res) => {

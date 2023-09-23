@@ -4,9 +4,10 @@ import { auth } from "../firebase";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import axiosInstance from "../axiosConfig";
+import { BiLogOut } from "react-icons/bi";
 
 
-const Left = ({socket,setRoomID,users,setUsers}) => {
+const Left = ({socket,setRoomID,users,setShowRightSection}) => {
     const userData = useSelector(state => state.user.userData)
     const [searchInput,setSearchInput] = useState('')
     const usersWithLastMessage = users.filter(room => room.last_message !== null);
@@ -22,7 +23,6 @@ const Left = ({socket,setRoomID,users,setUsers}) => {
         const performSearch = async () => {
           try {
             const response = await axiosInstance.get(`/users?search=${searchInput}&userid=${userData.id}`);
-            console.log(response.data);
             setSearchUsers(response.data);
           } catch (error) {
             console.error('Error searching for users:', error);
@@ -59,51 +59,62 @@ const Left = ({socket,setRoomID,users,setUsers}) => {
       const room = await axiosInstance.get(`/room?my_id=${userData.id}&other_id=${otherUserID}`)
       setRoomID(room.data._id)
     }
-
+    function handleUserClick(user_id){
+      setTheRoom(user_id)
+      setShowRightSection(true)
+    }
   return (
     <div className="left">
-        {/* searchbar */}
-        <div className="headleft">
-            <img className="user-img" src={userData.photoURL} alt={userData.displayName} />
-            <div className="search-input">
-                <input value={searchInput} onChange={e => setSearchInput(e.target.value)} type="text" placeholder="Search" />
-                {
-                searchUsers.length >0 &&
-                <div className="result-container">
-                    {
-                    
-                    searchUsers.map(data => <Link onClick={()=>makeRoom(data.id)} className="link-user" key={data._id} to={"/chat/"+data.id}>
-                        <div className="search-user" >
-                            <img src={data.photoURL} alt={data.username} />
-                            <span>{data.username}</span>
-                            </div>
-                    </Link> 
-                        )
-                    }
-                </div>
-                }
-            </div>
+      {/* searchbar */}
+      <div className="topbar shadow">
+        <div className="center">
+
+          <img className="user-img" src={userData.photoURL} alt={userData.displayName} />
         </div>
-        {/* list of users or rooms */}
-          <ul className="user-container">
-            {
-              usersWithLastMessage?.map(data => {
-                return(
-                  <Link onClick={()=>setTheRoom(data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id)} className={`link-user`} key={data.name}  to={`/chat/${data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id}`}>
-                    <li className={ data.active ? "active" : ""}>
-                      <img src={data.users_info.user1.id === userData.id ? data.users_info.user2.photoURL : data.users_info.user1.photoURL} alt={"heh"} />
+          <div className="search-input center">
+              <input  value={searchInput} onChange={e => setSearchInput(e.target.value)} type="text" placeholder="Search" />
+              {
+              searchUsers.length > 0 &&
+              <div className="result-container">
+                  {       
+                  searchUsers.map(data => <Link onClick={()=>makeRoom(data.id)} key={data._id} to={"/chat/"+data.id}>
+                      <div className="chat-item p" >
+                        <div className="center">
+                          <img className="user-img" src={data.photoURL} alt={data.username} />
+                        </div>
+                          <span>{data.username}</span>
+                      </div>
+                  </Link> 
+                      )
+                  }
+              </div>
+              }
+          </div>
+      </div>
+      {/* list of users or rooms */}
+        <ul className="user-container">
+          {
+            usersWithLastMessage?.map(data => {
+              return(
+                <Link onClick={()=>handleUserClick(data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id)}  key={data.name}  to={`/chat/${data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id}`}>
+                  <li className={`chat-item p ${data.active? "active" : ""}`}>
+                    <div>
+                      <img className="user-img side" src={data.users_info.user1.id === userData.id ? data.users_info.user2.photoURL : data.users_info.user1.photoURL} alt={"heh"} />
+                    </div>
                     <div>
                       <h4>{data.users_info.user1.id === userData.id ? data.users_info.user2.username : data.users_info.user1.username}</h4>
-                      <p>{data.last_message}</p>
+                      <p> {data.last_message}</p>
                     </div>
-                    </li>
-                  </Link>
-                )
-              })
-            }
+                  </li>
+                </Link>
+              )
+            })
+          }
 
-          </ul>
-        <button onClick={logout} className="logout-btn">Logout</button>
+        </ul>
+        <div className="p">
+          <BiLogOut title="logout" className="logout-btn" onClick={logout} />
+        </div>
     </div>
   )
 }
