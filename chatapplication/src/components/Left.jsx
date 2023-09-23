@@ -7,7 +7,7 @@ import axiosInstance from "../axiosConfig";
 import { BiLogOut } from "react-icons/bi";
 
 
-const Left = ({socket,setRoomID,users,setShowRightSection}) => {
+const Left = ({socket,setRoomID,users,setShowRightSection,setUsers}) => {
     const userData = useSelector(state => state.user.userData)
     const [searchInput,setSearchInput] = useState('')
     const usersWithLastMessage = users.filter(room => room.last_message !== null);
@@ -52,16 +52,21 @@ const Left = ({socket,setRoomID,users,setShowRightSection}) => {
       }
     function makeRoom(otherUserID){
         socket.emit("make room",userData.id,otherUserID)
+        setShowRightSection(true)
         setSearchUsers([])
     }
 
-    async function setTheRoom(otherUserID){
-      const room = await axiosInstance.get(`/room?my_id=${userData.id}&other_id=${otherUserID}`)
-      setRoomID(room.data._id)
-    }
-    function handleUserClick(user_id){
-      setTheRoom(user_id)
+    function handleUserClick(room_id){
+      setRoomID(room_id)
       setShowRightSection(true)
+      // TODO send socket event to update the last_message_seen_by
+      socket.emit("update room",room_id,userData.id)
+      setUsers(prevUsers => {
+        return prevUsers.map(user => {
+          return user._id === room_id ? {...user,last_message_seen_by : [...user.last_message_seen_by,userData.id]} : user
+          
+        })
+      })
     }
   return (
     <div className="left">
@@ -96,14 +101,20 @@ const Left = ({socket,setRoomID,users,setShowRightSection}) => {
           {
             usersWithLastMessage?.map(data => {
               return(
-                <Link onClick={()=>handleUserClick(data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id)}  key={data.name}  to={`/chat/${data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id}`}>
+                <Link onClick={()=>handleUserClick(data._id)}  key={data.name}  to={`/chat/${data.users_info.user1.id === userData.id ? data.users_info.user2.id : data.users_info.user1.id}`}>
                   <li className={`chat-item p ${data.active? "active" : ""}`}>
                     <div>
                       <img className="user-img side" src={data.users_info.user1.id === userData.id ? data.users_info.user2.photoURL : data.users_info.user1.photoURL} alt={"heh"} />
                     </div>
                     <div>
                       <h4>{data.users_info.user1.id === userData.id ? data.users_info.user2.username : data.users_info.user1.username}</h4>
-                      <p> {data.last_message}</p>
+                      <p> 
+                      {
+                        data.last_message_seen_by.includes(userData.id) ?
+                        data.last_message : 
+                        <b>{data.last_message}</b>
+                      }  
+                      </p>
                     </div>
                   </li>
                 </Link>

@@ -54,7 +54,8 @@ async function makeRoom(userID,otherUserId){
                 user2
             },
             users : [userID,otherUserId],
-            last_message :null
+            last_message :null,
+            last_message_seen_by : []
         })
         return room
     }
@@ -98,19 +99,34 @@ mongoose.connect(databaseUrl)
         socket.on("send msg",async (message,roomID,myID,name,photoURL) => {
             //console.log("msg recv",message,roomID,myID)
             io.to(roomID).emit("msg recv",message,roomID,myID,name,photoURL)
-            await Room.findOneAndUpdate(
+            const room = await Room.findOneAndUpdate(
                 { _id: roomID }, // Find the room by _id
-                { $set: { last_message: message } }
+                { 
+                    $set:{ 
+                        last_message: message ,
+                        last_message_seen_by: [myID], 
+                    },
+          
+                },
+                { new: true }
             )
+            console.log("roomy:",room);
             await Msg.create({
                 content : message,
                 room_id : roomID,
                 sender_id : myID
             })
         })
-
-        socket.on("sendmsg",(msg,room)=>{
-            io.to(room).emit(msg)
+        socket.on("update room",async(roomID,myID)=>{
+            const updatedRoom = await Room.findOneAndUpdate(
+                { _id: roomID,last_message_seen_by: { $ne: myID }} ,
+                {
+                  $push: {
+                    last_message_seen_by: myID,
+                  },
+                },
+                { new: true } // This option returns the updated document
+              );
         })
         socket.on("disconnect",()=>{
             console.log(socket.id,"disconnected");

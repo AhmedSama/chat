@@ -11,6 +11,7 @@ const Right = ({messages,socket,roomID,setShowRightSection}) => {
   const userData = useSelector(state => state.user.userData)
   const [otherUserData,setOtherUserData] = useState(null)
   const {otherUserID} = useParams()
+  
   function sendMessage(){
     if(message.length <= 0){
       return

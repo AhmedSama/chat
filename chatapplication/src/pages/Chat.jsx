@@ -28,9 +28,7 @@ const Chat = () => {
       if(room.data){
         setRoomID(room.data._id)
       }
-      else{
-        navigate("/chat")
-      }
+
     }
 
   useEffect(()=>{
@@ -66,6 +64,7 @@ const Chat = () => {
   useEffect(() => {
     if (!socket) return
     socket.on("get rooms", rooms=>{
+      console.log(rooms);
       // add active state to the room data so i can style the active user
       const modifiedArray = rooms.map(obj => {
         return {
@@ -119,7 +118,7 @@ const Chat = () => {
       // user._id is the id of the room in side bar
       // room_id is the room id sent with the message
       setUsers((prevUsers) => {
-        return prevUsers.map(user=> user._id === room_id ? {...user,last_message : msg,updatedAt:updatedAt_timestamp} : user).sort((room1, room2) => {
+        return prevUsers.map(user=> user._id === room_id ? {...user,last_message : msg,updatedAt:updatedAt_timestamp,last_message_seen_by : [userID]} : user).sort((room1, room2) => {
           const date1 = new Date(room1.updatedAt);
           const date2 = new Date(room2.updatedAt);
           return date2 - date1;
@@ -129,6 +128,13 @@ const Chat = () => {
       // if the id of sender is the otherUserID or my id i have to update the messages
       if(otherUserID === userID || userData.id === userID){
         setMessages((prevMessages) => [{content:msg,sender_id : userID},...prevMessages ]);
+        socket.emit("update room",room_id,userData.id)
+        setUsers(prevUsers => {
+          return prevUsers.map(user => {
+            return user._id === room_id ? {...user,last_message_seen_by : [...user.last_message_seen_by,userData.id]} : user
+            
+          })
+        })
       }
       // else it means the msg comes from a user that I am not open his/her chat so just toast it
       else{
@@ -182,7 +188,8 @@ const Chat = () => {
                   return prevUsers
                 }
                 else{
-                  return [...prevUsers,{...roomInfo,active:false}]
+                  // make active true so when the user appears when send the message it become active
+                  return [...prevUsers,{...roomInfo,active:true}]
                 }
               })
               // set the room id so i can send msg * when i send a message i have to have the roomid is set
@@ -235,7 +242,7 @@ const Chat = () => {
         userData && socket &&
         <div className={`chat  ${showRightSection ? "show" : "hide"}`} >
             {/* left section */}
-            <Left socket={socket} setRoomID={setRoomID} users={users} setUsers={setUsers}  setShowRightSection={setShowRightSection}/>
+            <Left socket={socket} setUsers={setUsers} setRoomID={setRoomID} users={users}  setShowRightSection={setShowRightSection}/>
             {/* right section */}
             <Right messages={messages} socket={socket} roomID={roomID} setShowRightSection={setShowRightSection} />
         </div>
