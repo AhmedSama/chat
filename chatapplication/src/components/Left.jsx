@@ -59,14 +59,6 @@ const Left = ({socket,setRoomID,users,setShowRightSection,setUsers}) => {
     function handleUserClick(room_id){
       setRoomID(room_id)
       setShowRightSection(true)
-      // TODO send socket event to update the last_message_seen_by
-      socket.emit("update room",room_id,userData.id)
-      setUsers(prevUsers => {
-        return prevUsers.map(user => {
-          return user._id === room_id ? {...user,last_message_seen_by : [...user.last_message_seen_by,userData.id]} : user
-          
-        })
-      })
     }
   return (
     <div className="left">
@@ -111,8 +103,8 @@ const Left = ({socket,setRoomID,users,setShowRightSection,setUsers}) => {
                       <p> 
                       {
                         data.last_message_seen_by.includes(userData.id) ?
-                        data.last_message : 
-                        <b>{data.last_message}</b>
+                        <>{data.last_message.slice(0,25)}... </>: 
+                        <b>{data.last_message.slice(0,25)}...</b>
                       }  
                       </p>
                     </div>

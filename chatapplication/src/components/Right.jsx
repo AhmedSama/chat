@@ -5,6 +5,7 @@ import { IoSend } from "react-icons/io5";
 import { FaArrowLeft } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import axiosInstance from "../axiosConfig";
+import ImageUpload from "./ImageUpload";
 
 const Right = ({messages,socket,roomID,setShowRightSection}) => {
   const [message, setMessage] = useState('');
@@ -19,7 +20,7 @@ const Right = ({messages,socket,roomID,setShowRightSection}) => {
     const myID = userData.id
     const name = userData.displayName
     const photoURL = userData.photoURL
-    socket.emit("send msg",message,roomID,myID,name,photoURL)
+    socket.emit("send msg",message,roomID,myID,name,photoURL,"text")
     setMessage("")
   }
   useEffect(() => {
@@ -68,6 +69,7 @@ const Right = ({messages,socket,roomID,setShowRightSection}) => {
                     onChange={e=>setMessage(e.target.value)}
                 />
                 <IoSend title="send the message" onClick={sendMessage} className="send-btn"/>
+                <ImageUpload roomID={roomID} socket={socket}/>
               </div>
           </div>
         }

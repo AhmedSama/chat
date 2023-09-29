@@ -109,7 +109,7 @@ const Chat = () => {
   useEffect(() => {
     if(!socket) return
 
-    socket.on("msg recv",(msg,room_id,userID,name,photoURL)=>{
+    socket.on("msg recv",(msg,room_id,userID,name,photoURL,type)=>{
       const now = new Date(); // Get the current date and time
       // Format the date and time into the desired string format with the timezone offset
       const updatedAt_timestamp = now.toISOString().replace('Z', '+00:00');
@@ -127,14 +127,7 @@ const Chat = () => {
 
       // if the id of sender is the otherUserID or my id i have to update the messages
       if(otherUserID === userID || userData.id === userID){
-        setMessages((prevMessages) => [{content:msg,sender_id : userID},...prevMessages ]);
-        socket.emit("update room",room_id,userData.id)
-        setUsers(prevUsers => {
-          return prevUsers.map(user => {
-            return user._id === room_id ? {...user,last_message_seen_by : [...user.last_message_seen_by,userData.id]} : user
-            
-          })
-        })
+        setMessages((prevMessages) => [{content:msg,sender_id : userID,type},...prevMessages ]);
       }
       // else it means the msg comes from a user that I am not open his/her chat so just toast it
       else{
@@ -237,6 +230,9 @@ const Chat = () => {
         };
     },[])
 
+
+
+
   return (
     <>  {
         userData && socket &&
@@ -254,5 +250,4 @@ const Chat = () => {
     </>
   )
 }
-
 export default Chat

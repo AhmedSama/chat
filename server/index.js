@@ -8,14 +8,34 @@ const User = require("./models/user")
 const { v4: uuid } = require('uuid');
 const Room = require("./models/room")
 const Msg = require("./models/msg")
+const multer = require('multer');
+const path = require("path")
+
 require('dotenv').config();
 
 // environment variables
 const port = process.env.PORT || 4000;
 const databaseUrl = process.env.DATABASE_URL;
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 app.use(cors())
 app.use(express.json())
+
+// Define the storage for uploaded images
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      // Specify the directory where uploaded images will be saved
+      cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+      // Generate a unique filename for the uploaded image
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.mimetype.split('/')[1]);
+    },
+})
+
+const upload = multer({ storage });
+
 
 const server = http.createServer(app)
 
@@ -96,9 +116,9 @@ mongoose.connect(databaseUrl)
         socket.on("join by room info",(roomID)=>{
             socket.join(roomID)
         })
-        socket.on("send msg",async (message,roomID,myID,name,photoURL) => {
+        socket.on("send msg",async (message,roomID,myID,name,photoURL,type) => {
             //console.log("msg recv",message,roomID,myID)
-            io.to(roomID).emit("msg recv",message,roomID,myID,name,photoURL)
+            io.to(roomID).emit("msg recv",message,roomID,myID,name,photoURL,type)
             const room = await Room.findOneAndUpdate(
                 { _id: roomID }, // Find the room by _id
                 { 
@@ -114,9 +134,11 @@ mongoose.connect(databaseUrl)
             await Msg.create({
                 content : message,
                 room_id : roomID,
-                sender_id : myID
+                sender_id : myID,
+                type : type,
             })
         })
+        // under test
         socket.on("update room",async(roomID,myID)=>{
             const updatedRoom = await Room.findOneAndUpdate(
                 { _id: roomID,last_message_seen_by: { $ne: myID }} ,
@@ -154,6 +176,19 @@ mongoose.connect(databaseUrl)
         const msgs = await Msg.find({room_id : req.query.room_id}).sort({ createdAt: -1 });
         res.json(msgs)
     })
+    // Configure the file upload route
+    app.post('/upload', upload.single('image'), (req, res) => {
+        const image = req.file;
+    
+        if (!image) {
+            return res.status(400).send('No image uploaded.');
+        }
+    
+        // generate the full URL for the saved image
+        const imageUrl = `${req.protocol}://${req.get('host')}/${image.path}`;
+
+        res.status(200).json({ message: 'Image uploaded successfully', imageUrl });
+    });
     app.post("/adduser",async (req,res) => {
             User.findOne({ email: req.body.email })
             .then(async (result) => {
